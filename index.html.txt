@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GOGOL</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f1f3f4;
+}
+
+.header {
+  background: white;
+  padding: 16px;
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.logo {
+  font-size: 34px;
+  font-weight: bold;
+}
+
+.logo span:nth-child(1){color:#4285F4}
+.logo span:nth-child(2){color:#EA4335}
+.logo span:nth-child(3){color:#FBBC05}
+.logo span:nth-child(4){color:#4285F4}
+.logo span:nth-child(5){color:#34A853}
+
+.info {
+  font-size: 14px;
+  margin-top: 6px;
+  color: #555;
+}
+
+.container {
+  padding: 12px;
+  max-width: 640px;
+  margin: auto;
+}
+
+.card {
+  background: white;
+  border-radius: 16px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  cursor: pointer;
+  transition: 0.25s;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+}
+
+.thumbnail {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+}
+
+.card-title {
+  padding: 14px;
+  font-size: 17px;
+  font-weight: bold;
+}
+
+.hidden { display:none }
+
+.comment {
+  border-top: 1px solid #eee;
+  padding: 10px 0;
+}
+
+textarea {
+  width: 100%;
+  padding: 8px;
+  margin-top: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+button {
+  margin-top: 6px;
+  padding: 6px 14px;
+  border: none;
+  border-radius: 8px;
+  background: #4285F4;
+  color: white;
+}
+
+.fade {
+  animation: fadein 0.4s;
+}
+
+@keyframes fadein {
+  from{opacity:0; transform:translateY(10px)}
+  to{opacity:1; transform:none}
+}
+</style>
+</head>
+<body>
+
+<div id="mainPage">
+  <div class="header">
+    <div class="logo">
+      <span>G</span><span>O</span><span>G</span><span>O</span><span>L</span>
+    </div>
+    <div id="info" class="info">날씨 불러오는 중...</div>
+  </div>
+
+  <div class="container" id="newsContainer"></div>
+</div>
+
+<div id="newsPage" class="hidden container">
+  <div onclick="goBack()" style="color:blue; margin:10px 0; cursor:pointer">← 뒤로가기</div>
+  <div id="newsContent"></div>
+</div>
+
+<script>
+
+// ===== 실시간 시간 =====
+function updateTime(){
+  const now = new Date();
+  const time = now.toLocaleString();
+  document.getElementById("info").dataset.time = time;
+  renderInfo();
+}
+setInterval(updateTime,1000);
+updateTime();
+
+// ===== 날씨 API (Open-Meteo 무료 API) =====
+let weatherText="";
+fetch("https://api.open-meteo.com/v1/forecast?latitude=37.57&longitude=126.98&current_weather=true")
+.then(res=>res.json())
+.then(data=>{
+  weatherText=`서울 ${data.current_weather.temperature}°C`;
+  renderInfo();
+});
+
+function renderInfo(){
+  const time=document.getElementById("info").dataset.time||"";
+  document.getElementById("info").innerText=`${weatherText} | ${time}`;
+}
+
+// ===== 뉴스 데이터 =====
+const newsData=[
+  {
+    type:"clickbait",
+    title:"충격! 유명 연예인, 방송 중 돌발 행동",
+    img:"https://picsum.photos/400/200?1"
+  },
+  {
+    type:"luna",
+    title:"괴도루나의 얼굴 공개",
+    img:"https://picsum.photos/400/200?2"
+  }
+];
+
+// ===== 무한 스크롤 =====
+function loadMore(){
+  const container=document.getElementById("newsContainer");
+
+  newsData.forEach(n=>{
+    const card=document.createElement("div");
+    card.className="card fade";
+    card.onclick=()=>openNews(n.type);
+
+    card.innerHTML=`
+      <img class="thumbnail" src="${n.img}">
+      <div class="card-title">${n.title}</div>
+    `;
+
+    container.appendChild(card);
+  });
+}
+
+window.addEventListener("scroll",()=>{
+  if(window.innerHeight+window.scrollY>=document.body.offsetHeight-100){
+    loadMore();
+  }
+});
+
+loadMore();
+
+// ===== 뉴스 열기 =====
+function openNews(type){
+  document.getElementById("mainPage").classList.add("hidden");
+  document.getElementById("newsPage").classList.remove("hidden");
+
+  let html="";
+
+  if(type==="clickbait"){
+    html=`
+    <h2>충격! 유명 연예인, 방송 중 돌발 행동</h2>
+    <p>현재 온라인에서 논란이 확산 중이다.</p>
+    <div id="comments"></div>
+    <textarea id="commentInput" placeholder="댓글 작성"></textarea>
+    <button onclick="addComment()">등록</button>
+    `;
+  }
+
+  if(type==="luna"){
+    html=`
+    <h2>괴도루나의 얼굴 공개</h2>
+    <p>
+괴도루나의 얼굴을 공개하겠다는 네티즌들이 나타나고 있지만 여전히 가면 속 얼굴은 숨겨져 있습니다.
+AI 추측 이미지도 모두 블라인드 처리되었습니다.
+범행 특징은 CCTV 흔적을 남기지 않는 점이며,
+초대장 장면만 남기는 방식입니다.
+전문가들은 관심 결핍 가능성을 언급하고 있습니다.
+    </p>
+    <div id="comments"></div>
+    <textarea id="commentInput" placeholder="댓글 작성"></textarea>
+    <button onclick="addComment()">등록</button>
+    `;
+  }
+
+  document.getElementById("newsContent").innerHTML=html;
+}
+
+function goBack(){
+  document.getElementById("newsPage").classList.add("hidden");
+  document.getElementById("mainPage").classList.remove("hidden");
+}
+
+// ===== 댓글 기능 =====
+function addComment(){
+  const input=document.getElementById("commentInput");
+  if(!input.value) return;
+
+  const div=document.createElement("div");
+  div.className="comment fade";
+  div.innerText=input.value;
+
+  document.getElementById("comments").prepend(div);
+  input.value="";
+}
+
+</script>
+
+</body>
+</html>
